@@ -1,0 +1,59 @@
+# This workflow will build and push an application to a Azure Kubernetes Service (AKS) cluster
+name: Build and deploy an app to AKS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          repository: SSPJ/verbose-octo-broccoli
+          path: ../infrastructure
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Build image
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+        run: |
+          docker build . -t "${ACR_NAME}.azurecr.io/sfgtest:latest"
+      - name: Login to container registry
+        env:
+          STAGE_SERVICE_PRINCIPAL_APP_ID: ${{ secrets.STAGE_SERVICE_PRINCIPAL_APP_ID }}
+          STAGE_SERVICE_PRINCIPAL_SECRET: ${{ secrets.STAGE_SERVICE_PRINCIPAL_SECRET }}
+          STAGE_SERVICE_PRINCIPAL_TENANT: ${{ secrets.STAGE_SERVICE_PRINCIPAL_TENANT }}
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+        run: |
+          az login \
+          --service-principal \
+          --username "$STAGE_SERVICE_PRINCIPAL_APP_ID" \
+          --password "$STAGE_SERVICE_PRINCIPAL_SECRET" \
+          --tenant "$STAGE_SERVICE_PRINCIPAL_TENANT"
+          az acr login --name "$ACR_NAME"
+      - name: Push image
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+        run: |
+          docker push "${ACR_NAME}.azurecr.io/sfgtest:latest"
+      - name: Get AKS credentials
+        env:
+          STAGE_CLUSTER_RESOURCE_GROUP_NAME: ${{ secrets.STAGE_CLUSTER_RESOURCE_GROUP_NAME }}
+          STAGE_CLUSTER_NAME: ${{ secrets.STAGE_CLUSTER_NAME }}
+        run: |
+          az aks get-credentials \
+            --resource-group "$STAGE_CLUSTER_RESOURCE_GROUP_NAME" \
+            --name "$STAGE_CLUSTER_NAME" \
+            --overwrite-existing
+      - name: Deploy application
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+          IMAGE_REPO: ${ACR_NAME}.azurecr.io/sfgtest:latest
+        run: |
+          sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ../infrastructure/k8s/deployment.yaml | \
+          kubectl apply -f -
