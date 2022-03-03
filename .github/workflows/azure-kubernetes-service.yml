@@ -12,16 +12,20 @@ jobs:
     name: Deploy application
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - name: Checkout infrastructure repo
+        uses: actions/checkout@master
         with:
           repository: SSPJ/verbose-octo-broccoli
-          path: ../infrastructure
+          path: infrastructure
       - name: Checkout repo
         uses: actions/checkout@v2
+        with:
+          path: main
       - name: Build image
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
         run: |
+          cd main
           docker build . -t "${ACR_NAME}.azurecr.io/sfgtest:latest"
       - name: Login to container registry
         env:
@@ -55,5 +59,5 @@ jobs:
           ACR_NAME: ${{ secrets.ACR_NAME }}
           IMAGE_REPO: ${ACR_NAME}.azurecr.io/sfgtest:latest
         run: |
-          sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ../infrastructure/k8s/deployment.yaml | \
+          sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ./infrastructure/k8s/deployment.yaml | \
           kubectl apply -f -
