@@ -27,18 +27,14 @@ jobs:
         run: |
           cd main
           docker build . -t "${ACR_NAME}.azurecr.io/sfgtest:latest"
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.STAGE_CREDENTIALS }}
       - name: Login to container registry
         env:
-          STAGE_SERVICE_PRINCIPAL_APP_ID: ${{ secrets.STAGE_SERVICE_PRINCIPAL_APP_ID }}
-          STAGE_SERVICE_PRINCIPAL_SECRET: ${{ secrets.STAGE_SERVICE_PRINCIPAL_SECRET }}
-          STAGE_SERVICE_PRINCIPAL_TENANT: ${{ secrets.STAGE_SERVICE_PRINCIPAL_TENANT }}
           ACR_NAME: ${{ secrets.ACR_NAME }}
         run: |
-          az login \
-          --service-principal \
-          --username "$STAGE_SERVICE_PRINCIPAL_APP_ID" \
-          --password "$STAGE_SERVICE_PRINCIPAL_SECRET" \
-          --tenant "$STAGE_SERVICE_PRINCIPAL_TENANT"
           az acr login --name "$ACR_NAME"
       - name: Push image
         env:
@@ -57,7 +53,7 @@ jobs:
       - name: Deploy application
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
-          IMAGE_REPO: ${ACR_NAME}.azurecr.io/sfgtest:latest
+          IMAGE_REPO: ${{ secrets.ACR_NAME }}.azurecr.io/sfgtest:latest
         run: |
           sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ./infrastructure/k8s/deployment.yaml | \
           kubectl apply -f -
