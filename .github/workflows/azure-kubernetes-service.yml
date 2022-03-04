@@ -53,7 +53,7 @@ jobs:
       - name: Install Azure kubectl
         run: |
           az aks install-cli \
-            --install-location $PWD
+            --install-location "${PWD}/kubectl"
       - name: Deploy application
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
