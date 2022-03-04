@@ -50,6 +50,9 @@ jobs:
             --resource-group "$STAGE_CLUSTER_RESOURCE_GROUP_NAME" \
             --name "$STAGE_CLUSTER_NAME" \
             --overwrite-existing
+      - name: Install Azure kubectl
+        run: |
+          az aks install-cli
       - name: Deploy application
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
