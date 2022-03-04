@@ -52,10 +52,7 @@ jobs:
             --overwrite-existing
       - name: Install Azure kubectl
         run: |
-          echo $PATH
-          az aks install-cli \
-            --install-location "${PWD}/kubectl" \
-            --kubelogin-install-location "${PWD}/kubelogin" 
+          sudo az aks install-cli
       - name: Deploy application
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
