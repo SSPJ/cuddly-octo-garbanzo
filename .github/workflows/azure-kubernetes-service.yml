@@ -50,7 +50,7 @@ jobs:
             --resource-group "$STAGE_CLUSTER_RESOURCE_GROUP_NAME" \
             --name "$STAGE_CLUSTER_NAME" \
             --overwrite-existing
-      - name: Install Azure kubectl
+      - name: Install Azure kubectl and kubelogin
         run: |
           sudo az aks install-cli
       - name: Deploy application
@@ -58,6 +58,6 @@ jobs:
           ACR_NAME: ${{ secrets.ACR_NAME }}
           IMAGE_REPO: ${{ secrets.ACR_NAME }}.azurecr.io/sfgtest:latest
         run: |
-          kubectl version
-          #sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ./infrastructure/k8s/deployment.yaml | \
+          kubelogin convert-kubeconfig -l azurecli
+          sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ./infrastructure/k8s/deployment.yaml | \
           kubectl apply -f -
