@@ -21,43 +21,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: main
-      - name: Build image
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
+      - name: Ls after CD
         run: |
           cd main
-          docker build . -t "${ACR_NAME}.azurecr.io/sfgtest:latest"
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.STAGE_CREDENTIALS }}
-      - name: Login to container registry
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
+          ls
+          pwd
+      - name: Ls without CD
         run: |
-          az acr login --name "$ACR_NAME"
-      - name: Push image
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
-        run: |
-          docker push "${ACR_NAME}.azurecr.io/sfgtest:latest"
-      - name: Get AKS credentials
-        env:
-          STAGE_CLUSTER_RESOURCE_GROUP_NAME: ${{ secrets.STAGE_CLUSTER_RESOURCE_GROUP_NAME }}
-          STAGE_CLUSTER_NAME: ${{ secrets.STAGE_CLUSTER_NAME }}
-        run: |
-          az aks get-credentials \
-            --resource-group "$STAGE_CLUSTER_RESOURCE_GROUP_NAME" \
-            --name "$STAGE_CLUSTER_NAME" \
-            --overwrite-existing
-      - name: Install Azure kubectl and kubelogin
-        run: |
-          sudo az aks install-cli
-      - name: Deploy application
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
-          IMAGE_REPO: ${{ secrets.ACR_NAME }}.azurecr.io/sfgtest:latest
-        run: |
-          kubelogin convert-kubeconfig -l azurecli
-          sed "s|%IMAGE_REPO%|$IMAGE_REPO|g; s/%VERSION%/latest/g" ./infrastructure/k8s/deployment.yaml | \
-          kubectl apply -f -
+          ls
+          pwd
